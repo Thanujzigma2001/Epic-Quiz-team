@@ -1,0 +1,447 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0B1220">
+<title>EPIC Quiz Team</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=DM+Sans:wght@400;500;700&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Layout: dashboard-style app shell. Home is a two-column split (intro + sign-in | live board); quiz is one focused column. */
+:root{
+  --bg:#0B1220; --card:#131F31; --raise:#1A2A42; --line:#263852;
+  --indigo:#8296FF; --blue:#4F63D9; --ok:#32C48D; --bad:#FF6978; --fg:#F4F7FB; --mute:#9DABC4;
+  --ok-bg:rgba(50,196,141,.14); --bad-bg:rgba(255,105,120,.14); --ind-bg:rgba(130,150,255,.12);
+  --display:"Bricolage Grotesque","Trebuchet MS",system-ui,sans-serif;
+  --body:"DM Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{background:var(--bg)}
+body{background:var(--bg);color:var(--fg);font:400 16px/1.55 var(--body);min-height:100%;position:relative}
+body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
+  background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);
+  background-size:56px 56px;opacity:.22;
+  -webkit-mask-image:linear-gradient(180deg,#000 0,transparent 70%);mask-image:linear-gradient(180deg,#000 0,transparent 70%)}
+.wrap{position:relative;z-index:1;max-width:1040px;margin:0 auto;padding-block:20px 56px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1,h2,h3{font-family:var(--display);line-height:1.08;margin:0;text-wrap:balance}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--indigo);outline-offset:2px}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.label{font:700 12px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--indigo)}
+
+/* top bar */
+.bar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-bottom:28px}
+.brand{display:flex;align-items:center;gap:12px;font:800 20px/1 var(--display);letter-spacing:.01em}
+.brand small{display:block;font:500 11px/1.2 var(--mono);letter-spacing:.12em;color:var(--mute);text-transform:uppercase;margin-top:5px}
+.btn{border:1px solid var(--line);background:var(--card);border-radius:10px;padding:10px 16px;font-weight:700;transition:background .15s,border-color .15s,transform .15s}
+.btn:hover{background:var(--raise);border-color:var(--indigo)}
+.btn.primary{background:var(--blue);border-color:var(--blue);color:#fff;padding:14px 22px;font-size:17px;letter-spacing:.04em}
+.btn.primary:hover{background:#6074EA;border-color:#6074EA}
+.btn:active{transform:translateY(1px)}
+.btn[disabled]{opacity:.5;cursor:not-allowed}
+
+/* home */
+.home{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);gap:28px;align-items:start}
+.hero h1{font-size:clamp(34px,6vw,58px);font-weight:800;letter-spacing:-.02em;margin:14px 0 16px}
+.hero p.lead{color:var(--mute);max-width:52ch;margin:0 0 20px;font-size:17px}
+.facts{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 24px;padding:0;list-style:none}
+.facts li{border:1px solid var(--line);background:var(--ind-bg);border-radius:999px;padding:7px 14px;font:700 13px/1 var(--mono);letter-spacing:.04em}
+.facts b{color:var(--indigo)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px}
+.field{display:grid;gap:6px;margin-bottom:14px}
+.field label{font-weight:700;font-size:14px}
+.field label span{color:var(--mute);font-weight:400}
+.field input{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:12px 14px;width:100%}
+.field input:focus{border-color:var(--indigo);outline:none;box-shadow:0 0 0 3px rgba(130,150,255,.3)}
+.err{color:var(--bad);font-size:14px;min-height:20px;margin:-4px 0 8px}
+.fine{color:var(--mute);font-size:13px;margin:12px 0 0}
+.side{display:grid;gap:18px;min-width:0}
+.side h2{font-size:20px;margin-bottom:12px}
+.cats{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.cats li{display:flex;justify-content:space-between;gap:12px;font-size:14px;border-bottom:1px dashed var(--line);padding-bottom:8px}
+.cats li:last-child{border:0;padding:0}
+.cats span:last-child{font-family:var(--mono);color:var(--indigo);font-weight:700}
+
+/* leaderboard */
+.status{display:flex;align-items:center;gap:8px;color:var(--mute);font-size:13px;margin:0 0 12px}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--mute);flex:none}
+.dot.live{background:var(--ok);box-shadow:0 0 0 3px var(--ok-bg)}
+.rows{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.row{display:grid;grid-template-columns:34px minmax(0,1fr) auto auto;gap:10px;align-items:center;background:var(--raise);border:1px solid transparent;border-radius:10px;padding:10px 12px}
+.row.me{border-color:var(--indigo);background:var(--ind-bg)}
+.row .rk{font:800 15px var(--mono);color:var(--mute)}
+.row:nth-child(1) .rk{color:var(--indigo)}
+.row .nm{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700}
+.row .nm i{font-style:normal;color:var(--mute);font-weight:400;margin-left:6px;font-size:13px}
+.row .sc{font:800 16px var(--mono)}
+.row .tm{font:500 12px var(--mono);color:var(--mute);min-width:44px;text-align:right}
+.empty{color:var(--mute);font-size:14px;padding:14px;border:1px dashed var(--line);border-radius:10px;margin:0}
+.champ{border:1px solid var(--indigo);background:var(--ind-bg);border-radius:14px;padding:18px;margin-bottom:16px}
+.champ h3{font-size:24px;margin:8px 0 4px}
+.champ p{margin:0;color:var(--mute)}
+
+/* quiz */
+.quiz{max-width:760px;margin:0 auto}
+.seg{display:flex;gap:4px;margin-bottom:16px}
+.seg div{height:6px;border-radius:3px;background:var(--line);overflow:hidden}
+.seg div i{display:block;height:100%;width:0;background:var(--indigo);transition:width .3s}
+.qtop{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}
+.qmeta{display:grid;gap:8px;min-width:0}
+.chip{justify-self:start;border:1px solid var(--line);background:var(--ind-bg);border-radius:999px;padding:6px 12px;font:700 12px/1.2 var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--indigo)}
+.ring{position:relative;width:64px;height:64px;flex:none}
+.ring svg{display:block;transform:rotate(-90deg)}
+.ring circle{fill:none;stroke-width:6}
+.ring .tr{stroke:var(--line)}
+.ring .pg{stroke:var(--indigo);stroke-linecap:round;transition:stroke .2s}
+.ring.low .pg{stroke:var(--bad)}
+.ring b{position:absolute;inset:0;display:grid;place-items:center;font:800 18px var(--mono)}
+.qcard h2{font-size:clamp(22px,4vw,30px);font-weight:600;line-height:1.25;letter-spacing:-.01em}
+.opts{display:grid;gap:10px;margin:18px 0}
+@media(min-width:700px){.opts{grid-template-columns:1fr 1fr}}
+.opt{display:flex;align-items:center;gap:12px;text-align:left;width:100%;background:var(--card);border:1.5px solid var(--line);border-radius:12px;padding:14px;min-height:64px;transition:border-color .15s,background .15s}
+.opt:hover:not([disabled]){border-color:var(--indigo);background:var(--raise)}
+.opt .k{flex:none;width:34px;height:34px;border-radius:8px;display:grid;place-items:center;background:var(--raise);font:800 15px var(--mono);color:var(--indigo)}
+.opt .t{min-width:0;overflow-wrap:anywhere}
+.opt[disabled]{cursor:default}
+.opt.ok{border-color:var(--ok);background:var(--ok-bg)}
+.opt.ok .k{background:var(--ok);color:#06231A}
+.opt.bad{border-color:var(--bad);background:var(--bad-bg)}
+.opt.bad .k{background:var(--bad);color:#2A0A10}
+.opt.dim{opacity:.55}
+.fb{border-radius:12px;padding:14px 16px;border:1px solid var(--line);background:var(--card);margin-bottom:14px}
+.fb.ok{border-color:var(--ok)}
+.fb.bad{border-color:var(--bad)}
+.fb strong{display:block;margin-bottom:2px}
+.fb.ok strong{color:var(--ok)}
+.fb.bad strong{color:var(--bad)}
+.fb p{margin:0;color:var(--mute);font-size:15px}
+.qfoot{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.hint{color:var(--mute);font-size:13px}
+
+/* results */
+.res{max-width:820px;margin:0 auto;display:grid;gap:18px}
+.score{display:flex;flex-wrap:wrap;align-items:flex-end;gap:18px 28px}
+.score .big{font:800 clamp(64px,14vw,110px)/.9 var(--display);letter-spacing:-.03em}
+.score .big small{font-size:.38em;color:var(--mute);font-weight:600;letter-spacing:0}
+.kv{display:flex;flex-wrap:wrap;gap:8px 22px;margin:0;color:var(--mute);font-size:14px}
+.kv b{color:var(--fg);font-family:var(--mono)}
+.bars{display:grid;gap:12px}
+.br{display:grid;grid-template-columns:minmax(0,200px) minmax(0,1fr) 44px;gap:12px;align-items:center;font-size:14px}
+.br .tk{height:8px;border-radius:4px;background:var(--line);overflow:hidden}
+.br .tk i{display:block;height:100%;background:var(--indigo);border-radius:4px}
+.br span:last-child{font:700 13px var(--mono);text-align:right}
+@media(max-width:560px){.br{grid-template-columns:minmax(0,1fr) 44px}.br .tk{grid-column:1/-1;order:3}}
+.actions{display:flex;flex-wrap:wrap;gap:10px}
+details.rev summary{cursor:pointer;font-weight:700;padding:4px 0}
+.rv{list-style:none;margin:12px 0 0;padding:0;display:grid;gap:8px}
+.rv li{border-left:3px solid var(--line);padding:4px 0 4px 12px;font-size:14px}
+.rv li.ok{border-color:var(--ok)}.rv li.bad{border-color:var(--bad)}
+.rv em{font-style:normal;color:var(--mute)}
+.danger{border-color:var(--bad);color:var(--bad)}
+
+.code{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:12px;font:500 13px/1.5 var(--mono);color:var(--fg);resize:vertical;word-break:break-all}
+[hidden]{display:none!important}
+body{margin:0}
+@media(max-width:820px){.home{grid-template-columns:minmax(0,1fr)}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+</head>
+<body>
+<div class="wrap">
+  <header class="bar">
+    <div class="brand">
+      <svg width="42" height="42" viewBox="0 0 42 42" aria-hidden="true"><path d="M21 2l16 9.2v19.6L21 40 5 30.8V11.2z" fill="#4F63D9"/><path d="M21 2l16 9.2v19.6L21 40 5 30.8V11.2z" fill="none" stroke="#8296FF" stroke-width="2"/><path d="M14.5 13h13v3.6H18.4v3.1h8v3.5h-8v3.2h9.1V30h-13z" fill="#F4F7FB"/></svg>
+      <div>EPIC Quiz Team<small>Level 2</small></div>
+    </div>
+    <button class="btn" id="navBoard" type="button">Organiser</button>
+  </header>
+
+  <!-- HOME -->
+  <main id="v-home" class="home">
+    <section class="hero">
+      <span class="label">Advanced General Knowledge Challenge &ndash; Level 2</span>
+      <h1>Fifty questions. Eight fields. One leaderboard.</h1>
+      <p class="lead">Current affairs, cricket, football, athletics, history, science and literature, written at advanced level. Answer on your own, see the result straight away and find your place against the rest of the team.</p>
+      <ul class="facts">
+        <li><b>50</b> Questions</li><li><b>8</b> Knowledge categories</li><li><b>Advanced</b> difficulty</li><li><b>50</b> Total marks</li>
+      </ul>
+      <form class="card" id="startForm" novalidate>
+        <div class="field"><label for="fName">Full name</label><input id="fName" type="text" autocomplete="name" maxlength="40" placeholder="e.g. Thanuj Perera" required></div>
+        <div class="field"><label for="fTeam">Team nickname <span>(optional)</span></label><input id="fTeam" type="text" maxlength="24" placeholder="e.g. Night Owls"></div>
+        <p class="err" id="fErr" role="alert"></p>
+        <button class="btn primary" type="submit" id="startBtn">START QUIZ</button>
+        <p class="fine">30 seconds per question. One mark each. Ties on the leaderboard are broken by total time.</p>
+      </form>
+    </section>
+    <aside class="side">
+      <section class="card"><h2>How it works</h2><ul class="cats" style="gap:10px"><li style="display:block">Play on your own. You see the answer after every question.</li><li style="display:block">At the end you get a <b>score code</b>. Send it to your quiz organiser.</li><li style="display:block">The organiser pastes everyone's codes into the Organiser view to rank the team.</li></ul></section>
+      <section class="card"><h2>Question bank</h2><ul class="cats" id="catList"></ul></section>
+    </aside>
+  </main>
+
+  <!-- QUIZ -->
+  <main id="v-quiz" class="quiz" hidden>
+    <div class="seg" id="seg" aria-hidden="true"></div>
+    <div class="qtop">
+      <div class="qmeta"><span class="label" id="qNum"></span><span class="chip" id="qCat"></span></div>
+      <div class="ring" id="ring" role="timer" aria-label="Time left"><svg width="64" height="64" viewBox="0 0 64 64"><circle class="tr" cx="32" cy="32" r="26"/><circle class="pg" id="pg" cx="32" cy="32" r="26" stroke-dasharray="163.36" stroke-dashoffset="0"/></svg><b id="tleft">30</b></div>
+    </div>
+    <section class="qcard card"><h2 id="qText"></h2></section>
+    <div class="opts" id="opts" role="group" aria-label="Answer options"></div>
+    <div class="fb" id="fb" hidden aria-live="polite"><strong id="fbH"></strong><p id="fbP"></p></div>
+    <div class="qfoot"><span class="hint" id="hint">Press A, B, C or D to answer</span><button class="btn primary" id="nextBtn" type="button" hidden>Next question</button></div>
+  </main>
+
+  <!-- RESULTS -->
+  <main id="v-results" class="res" hidden>
+    <section class="card">
+      <span class="label" id="rName"></span>
+      <div class="score" style="margin-top:14px">
+        <div class="big"><span id="rScore">0</span><small> / 50</small></div>
+        <div><h2 id="rBand" style="font-size:28px"></h2><p class="kv" id="rKv" style="margin:8px 0 0"></p></div>
+      </div>
+      <div style="margin-top:20px"><p class="fine" style="margin:0 0 8px">Send this score code to your quiz organiser. It carries your name, score and time.</p><textarea id="rCode" class="code" readonly rows="3" aria-label="Your score code"></textarea><div class="actions" style="margin-top:10px;align-items:center"><button class="btn primary" id="copyCode" type="button">Copy score code</button><span class="hint" id="copyMsg" aria-live="polite"></span></div></div>
+    </section>
+    <section class="card"><h2 style="font-size:20px;margin-bottom:14px">By category</h2><div class="bars" id="rBars"></div></section>
+    <section class="card"><details class="rev"><summary>Review your answers</summary><ol class="rv" id="rRev"></ol></details></section>
+    <div class="actions"><button class="btn primary" id="againBtn" type="button">Play again</button></div>
+  </main>
+
+  <!-- BOARD -->
+  <main id="v-board" class="res" hidden>
+    <section>
+      <span class="label">Organiser view</span>
+      <h1 style="font-size:clamp(30px,5vw,44px);margin:10px 0 10px">Rank the team</h1>
+      <p style="color:var(--mute);margin:0 0 14px">Paste the score codes your teammates sent you, one per line, then press Rank players. Codes that were edited or cut off are rejected.</p>
+      <textarea id="oIn" class="code" rows="6" placeholder="EQT2-..." aria-label="Score codes"></textarea>
+      <div class="actions" style="margin:10px 0 0"><button class="btn primary" id="oRank" type="button">Rank players</button><button class="btn" id="oClear" type="button">Clear</button></div>
+      <p class="err" id="oMsg" style="margin-top:12px" aria-live="polite"></p>
+      <div id="champ"></div>
+      <div id="fullBoard"></div>
+      <div class="actions" id="oCopyRow" style="margin-top:12px" hidden><button class="btn" id="oCopy" type="button">Copy results as text</button></div>
+    </section>
+    <div class="actions"><button class="btn" id="boardHome" type="button">Back</button></div>
+  </main>
+</div>
+
+<script>
+(function(){
+var Q = [{"c": "Sri Lankan Current Affairs", "q": "The IMF Board's May 2026 approval of Sri Lanka's combined 5th and 6th EFF reviews released roughly how much?", "o": ["About US$347 million", "About US$1.0 billion", "About US$695 million (SDR 508 m)", "About US$2.4 billion"], "a": 2, "e": "Approved on 28 May 2026. Total IMF support disbursed under the 48-month EFF is now about US$2.4 billion; US$347 million was the size of the earlier Fifth Review tranche alone.", "f": ""}, {"c": "Sri Lankan Current Affairs", "q": "On which date was Sri Lanka's 2026 Budget presented to Parliament by President Anura Kumara Dissanayake?", "o": ["7 November 2025", "5 November 2025", "14 November 2025", "20 October 2025"], "a": 0, "e": "The 2026 Budget was presented on 7 November 2025 and carried a 7% growth target that the IMF reviewed.", "f": ""}, {"c": "Sri Lankan Current Affairs", "q": "Which cyclone made landfall in late November 2025, triggering floods and landslides across all 25 districts?", "o": ["Cyclone Montha", "Cyclone Ditwah", "Cyclone Fengal", "Cyclone Roanu"], "a": 1, "e": "UN OCHA counted almost one million people affected across all 25 districts after Cyclone Ditwah.", "f": ""}, {"c": "Sri Lankan Current Affairs", "q": "In 2025 the World Bank moved Sri Lanka into which income group?", "o": ["Lower-middle income", "High income", "Low income", "Upper-middle income"], "a": 3, "e": "Sri Lanka was reclassified as an upper-middle income economy.", "f": "Confirm year of reclassification (July 2025 World Bank update) before publishing."}, {"c": "Sri Lankan Current Affairs", "q": "Who leads the IMF staff mission to Sri Lanka as Mission Chief?", "o": ["Kristalina Georgieva", "Julie Kozack", "Evan Papageorgiou", "Pierre-Olivier Gourinchas"], "a": 2, "e": "Evan Papageorgiou led the missions for the Fifth/Sixth Reviews and the Seventh Review (from 10 Sept 2026). Georgieva is Managing Director; Kozack is Communications Director.", "f": ""}, {"c": "Sri Lankan Current Affairs", "q": "Which review is the final one scheduled under Sri Lanka's current 48-month IMF EFF arrangement?", "o": ["The Sixth Review", "The Seventh Review", "The Ninth Review", "The Eighth Review"], "a": 3, "e": "The Eighth Review becomes available from 1 March 2027 and covers end-December 2026 targets.", "f": ""}, {"c": "Sri Lankan Current Affairs", "q": "How many of the 225 parliamentary seats did the NPP win at the November 2024 general election?", "o": ["141", "113", "168", "159"], "a": 3, "e": "The NPP won 159 seats, a two-thirds majority.", "f": ""}, {"c": "Foreign Current Affairs", "q": "Which city hosts the COP31 UN climate summit from 9 to 20 November 2026?", "o": ["Belém, Brazil", "Sharm El-Sheikh, Egypt", "Antalya, Türkiye", "Baku, Azerbaijan"], "a": 2, "e": "COP31 is at the Antalya Expo area. Belém hosted COP30, Baku COP29 and Sharm El-Sheikh COP27.", "f": ""}, {"c": "Foreign Current Affairs", "q": "Where was the COP30 climate summit held in November 2025?", "o": ["Belém, Brazil", "Dubai, UAE", "Baku, Azerbaijan", "Bonn, Germany"], "a": 0, "e": "COP30 opened on 10 November 2025 in Belém.", "f": ""}, {"c": "Foreign Current Affairs", "q": "Under the COP31 compromise, which country leads the negotiations as 'President of negotiations'?", "o": ["Brazil", "Germany", "Canada", "Australia"], "a": 3, "e": "Türkiye hosts and holds the presidency; Australia leads the negotiations under the Türkiye–Australia partnership modalities.", "f": ""}, {"c": "Foreign Current Affairs", "q": "Who was appointed Türkiye's COP31 President?", "o": ["Hakan Fidan", "Mehmet Şimşek", "Murat Kurum", "Ali Babacan"], "a": 2, "e": "Environment, Urbanisation and Climate Change Minister Murat Kurum was appointed by presidential circular.", "f": ""}, {"c": "Foreign Current Affairs", "q": "To what amount did Nobel Prize money per full category rise in 2026?", "o": ["SEK 11 million", "SEK 12 million", "SEK 10 million", "SEK 15 million"], "a": 1, "e": "The prize rose from SEK 11 million in 2025 to SEK 12 million.", "f": ""}, {"c": "Foreign Current Affairs", "q": "Which nation topped the Milano Cortina 2026 Winter Olympics medal table with 18 golds?", "o": ["Norway", "United States", "Netherlands", "Italy"], "a": 0, "e": "Norway won 18 gold and 41 total medals. The USA set its own record with 12 golds and 33 medals.", "f": ""}, {"c": "Foreign Current Affairs", "q": "Which team won men's ice hockey gold at Milano Cortina 2026, beating Canada in overtime?", "o": ["Canada", "United States", "Sweden", "Finland"], "a": 1, "e": "The USA's overtime win over Canada decided the final medals of the Games on 22 February 2026.", "f": ""}, {"c": "Cricket", "q": "By what margin did India beat New Zealand in the 2026 T20 World Cup final?", "o": ["54 runs", "72 runs", "8 wickets", "96 runs"], "a": 3, "e": "India won by 96 runs in Ahmedabad on 8 March 2026.", "f": ""}, {"c": "Cricket", "q": "Where was the 2026 T20 World Cup final played?", "o": ["R. Premadasa Stadium, Colombo", "Wankhede Stadium, Mumbai", "Narendra Modi Stadium, Ahmedabad", "Eden Gardens, Kolkata"], "a": 2, "e": "India and Sri Lanka co-hosted; the final was at the 132,000-capacity Narendra Modi Stadium.", "f": ""}, {"c": "Cricket", "q": "Who was Player of the Match in the 2026 T20 World Cup final?", "o": ["Suryakumar Yadav", "Sanju Samson", "Tim Seifert", "Jasprit Bumrah"], "a": 3, "e": "Bumrah took 4 for 15, the best figures in a T20 World Cup final.", "f": ""}, {"c": "Cricket", "q": "Who hit an unbeaten 100 as Sri Lanka chased 182 against Australia at Pallekele in February 2026?", "o": ["Pathum Nissanka", "Kusal Mendis", "Kamindu Mendis", "Pavan Rathnayake"], "a": 0, "e": "Nissanka made 100* off 52 balls and Sri Lanka won by eight wickets to reach the Super 8s.", "f": ""}, {"c": "Cricket", "q": "Which team knocked co-hosts Sri Lanka out of the 2026 T20 World Cup by 61 runs on 25 February?", "o": ["England", "Pakistan", "Australia", "New Zealand"], "a": 3, "e": "New Zealand made 168/7 and bowled Sri Lanka out for 107/8 at the R. Premadasa Stadium.", "f": ""}, {"c": "Cricket", "q": "India's 2026 win made them the first team to win how many Men's T20 World Cups?", "o": ["Two", "Three", "Four", "Five"], "a": 1, "e": "India won in 2007, 2024 and 2026, and became the first team to defend the title.", "f": ""}, {"c": "Cricket", "q": "Who captained Sri Lanka at the 2026 T20 World Cup?", "o": ["Charith Asalanka", "Dasun Shanaka", "Wanindu Hasaranga", "Kusal Mendis"], "a": 1, "e": "Dasun Shanaka led the side, with Vikram Rathour as coach.", "f": ""}, {"c": "Football", "q": "Spain beat Argentina 1-0 after extra time in the 2026 World Cup final. Who scored?", "o": ["Ferran Torres", "Mikel Oyarzabal", "Pedro Porro", "Lamine Yamal"], "a": 0, "e": "Torres scored in the 106th minute. Oyarzabal and Porro scored in the semi-final against France.", "f": "Single-source scorer detail (Daily Mirror results page); confirm against FIFA match report."}, {"c": "Football", "q": "Which stadium staged the 2026 FIFA World Cup final on 19 July?", "o": ["MetLife Stadium, New Jersey", "AT&T Stadium, Texas", "Estadio Azteca, Mexico City", "SoFi Stadium, Los Angeles"], "a": 0, "e": "Estadio Azteca staged the opening match on 11 June.", "f": ""}, {"c": "Football", "q": "Which Argentina player was sent off in the 90+3 minute of the 2026 final?", "o": ["Lautaro Martínez", "Nicolás Otamendi", "Enzo Fernández", "Rodrigo De Paul"], "a": 2, "e": "Argentina played extra time with ten men.", "f": "Single-source red-card detail (Daily Mirror results page); confirm against FIFA match report."}, {"c": "Football", "q": "Spain's 2026 triumph was their second World Cup. When did they win the first?", "o": ["2006", "2010", "2014", "2018"], "a": 1, "e": "Spain's first title came in South Africa in 2010.", "f": ""}, {"c": "Football", "q": "How many teams and matches did the expanded 2026 World Cup have?", "o": ["48 teams, 104 matches", "32 teams, 64 matches", "40 teams, 80 matches", "48 teams, 96 matches"], "a": 0, "e": "The first 48-team edition added a Round of 32 and was hosted by the USA, Canada and Mexico.", "f": ""}, {"c": "Football", "q": "Which team won the 2026 third-place play-off with a 6-4 win over France?", "o": ["England", "Morocco", "Netherlands", "Belgium"], "a": 0, "e": "Bukayo Saka scored a hat-trick in the ten-goal match.", "f": "Hat-trick detail from a single source (Daily Mirror); confirm."}, {"c": "Athletics", "q": "What height did Mondo Duplantis clear for his 15th pole vault world record in Uppsala in March 2026?", "o": ["6.30 m", "6.32 m", "6.35 m", "6.31 m"], "a": 3, "e": "He cleared 6.31 m on 12 March 2026 at the Mondo Classic.", "f": ""}, {"c": "Athletics", "q": "At which city's World Championships did Duplantis set the 6.30 m record in September 2025?", "o": ["Tokyo", "Budapest", "Eugene", "Paris"], "a": 0, "e": "Tokyo 2025 produced his fourth world record of that year.", "f": ""}, {"c": "Athletics", "q": "Whose 6.16 m pole vault record from 2014 did Duplantis first break in 2020?", "o": ["Sergey Bubka", "Sam Kendricks", "Renaud Lavillenie", "Thiago Braz"], "a": 2, "e": "He raised it to 6.17 m in Toruń in February 2020.", "f": ""}, {"c": "Athletics", "q": "Who ended Duplantis's near three-year winning streak in Stockholm in June 2026?", "o": ["Kurtis Marschall", "Emmanouil Karalis", "Sondre Guttormsen", "Sam Kendricks"], "a": 0, "e": "Australia's Marschall handed him his first defeat in almost three years.", "f": ""}, {"c": "Athletics", "q": "Which city hosted the 2026 World Athletics Ultimate Championship in September?", "o": ["Tokyo", "Budapest", "Eugene", "Paris"], "a": 1, "e": "The pole vault final was on 11 September 2026.", "f": ""}, {"c": "History", "q": "The Peace of Westphalia in 1648 ended which conflict?", "o": ["The Hundred Years' War", "The Seven Years' War", "The Thirty Years' War", "The War of the Spanish Succession"], "a": 2, "e": "It also helped establish the principle of state sovereignty.", "f": ""}, {"c": "History", "q": "Which 1757 battle began East India Company dominance over Bengal?", "o": ["Battle of Buxar", "Battle of Plassey", "Third Battle of Panipat", "Battle of Seringapatam"], "a": 1, "e": "Robert Clive's victory over Siraj ud-Daulah. Buxar followed in 1764.", "f": ""}, {"c": "History", "q": "Who was the last king of the Kandyan Kingdom, deposed in 1815?", "o": ["Rajadhi Rajasinha", "Sri Vikrama Rajasinha", "Kirti Sri Rajasinha", "Narendra Sinha"], "a": 1, "e": "The Kandyan Convention of 1815 ended the island's last independent monarchy.", "f": ""}, {"c": "History", "q": "Who became the first Prime Minister of independent Ceylon in 1948?", "o": ["S. W. R. D. Bandaranaike", "Dudley Senanayake", "John Kotelawala", "D. S. Senanayake"], "a": 3, "e": "Ceylon became independent on 4 February 1948.", "f": ""}, {"c": "History", "q": "Which statesman presided over the Congress of Vienna in 1814-15?", "o": ["Otto von Bismarck", "Lord Palmerston", "Klemens von Metternich", "Cardinal Richelieu"], "a": 2, "e": "The Austrian foreign minister dominated the settlement after Napoleon.", "f": ""}, {"c": "History", "q": "Which Ottoman sultan captured Constantinople in 1453?", "o": ["Suleiman I", "Selim I", "Mehmed II", "Bayezid I"], "a": 2, "e": "The conquest ended the Byzantine Empire.", "f": ""}, {"c": "Science and Technology", "q": "The 2026 Nobel Prize in Physiology or Medicine honoured which light-based method of controlling neurons?", "o": ["CRISPR gene editing", "Functional MRI", "Optogenetics", "Patch-clamp recording"], "a": 2, "e": "Karl Deisseroth, Peter Hegemann and Georg Nagel were recognised.", "f": ""}, {"c": "Science and Technology", "q": "Francis Halzen's 2026 Nobel Prize in Physics is linked to which neutrino observatory?", "o": ["Super-Kamiokande", "LIGO", "Sudbury Neutrino Observatory", "IceCube"], "a": 3, "e": "IceCube detects high-energy neutrinos in Antarctic ice.", "f": ""}, {"c": "Science and Technology", "q": "The 2026 Nobel Prize in Chemistry (Kagan and Soai) recognised discoveries in which field?", "o": ["Click chemistry", "Lithium-ion batteries", "Asymmetric organic synthesis", "Protein structure prediction"], "a": 2, "e": "The work concerns reactions that favour one mirror-image form of a molecule.", "f": "Confirm against nobelprize.org summary page before publishing."}, {"c": "Science and Technology", "q": "Which DeepMind system's creators shared the 2024 Nobel Prize in Chemistry?", "o": ["AlphaGo", "AlphaFold", "AlphaZero", "Gato"], "a": 1, "e": "Demis Hassabis and John Jumper shared it with David Baker.", "f": ""}, {"c": "Science and Technology", "q": "Which 2017 Google paper introduced the Transformer architecture?", "o": ["Deep Residual Learning for Image Recognition", "Generative Adversarial Nets", "ImageNet Classification with Deep CNNs", "Attention Is All You Need"], "a": 3, "e": "The Transformer underpins modern large language models.", "f": ""}, {"c": "Science and Technology", "q": "Which normal form removes transitive dependencies in relational database design?", "o": ["Third Normal Form (3NF)", "First Normal Form (1NF)", "Second Normal Form (2NF)", "Fourth Normal Form (4NF)"], "a": 0, "e": "2NF removes partial dependencies; 3NF removes transitive ones.", "f": ""}, {"c": "Sri Lankan and Foreign Literature", "q": "Who won the 2026 Nobel Prize in Literature?", "o": ["Haruki Murakami", "Anne Carson", "Margaret Atwood", "Jon Fosse"], "a": 1, "e": "The Canadian poet was cited for work in playful dialogue with the classical tradition.", "f": ""}, {"c": "Sri Lankan and Foreign Literature", "q": "In which year did Hungarian writer László Krasznahorkai win the Nobel Prize in Literature?", "o": ["2025", "2023", "2024", "2026"], "a": 0, "e": "He won in 2025. Han Kang won in 2024 and Anne Carson in 2026.", "f": ""}, {"c": "Sri Lankan and Foreign Literature", "q": "Who wrote the Sinhala novel Gamperaliya (1944)?", "o": ["Piyadasa Sirisena", "Martin Wickramasinghe", "Ediriweera Sarachchandra", "W. A. Silva"], "a": 1, "e": "It is the first book of his village trilogy.", "f": ""}, {"c": "Sri Lankan and Foreign Literature", "q": "Which Sri Lankan author won the 2022 Booker Prize for The Seven Moons of Maali Almeida?", "o": ["Michael Ondaatje", "Shehan Karunatilaka", "Romesh Gunesekera", "Ashok Ferrey"], "a": 1, "e": "Karunatilaka's afterlife thriller is set in 1989 Colombo.", "f": ""}, {"c": "Sri Lankan and Foreign Literature", "q": "Han Kang's novel The Vegetarian won which prize in 2016?", "o": ["Pulitzer Prize for Fiction", "National Book Award", "Prix Goncourt", "International Booker Prize"], "a": 3, "e": "It was translated by Deborah Smith; Han Kang later won the 2024 Nobel.", "f": ""}, {"c": "Sri Lankan and Foreign Literature", "q": "In which fictional town is García Márquez's One Hundred Years of Solitude set?", "o": ["Macondo", "Comala", "Santa María", "Yoknapatawpha"], "a": 0, "e": "Macondo is founded by José Arcadio Buendía.", "f": ""}];
+var TOTAL=Q.length, TLIM=30, CIRC=163.36, LET=["A","B","C","D"];
+var CATS=[]; Q.forEach(function(q){ if(CATS.indexOf(q.c)<0) CATS.push(q.c); });
+var CC=CATS.map(function(c){return Q.filter(function(q){return q.c===c}).length});
+function $(id){return document.getElementById(id)}
+function esc(s){return String(s).replace(/[&<>"']/g,function(m){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]})}
+function mmss(ms){var s=Math.round(ms/1000);return ("0"+Math.floor(s/60)).slice(-2)+":"+("0"+(s%60)).slice(-2)}
+function newSid(){return "s"+Date.now().toString(36)+Math.random().toString(36).slice(2,8)}
+
+var S={name:"",team:"",i:0,ans:[],score:0,ms:0,locked:false,t0:0,tick:null,sid:newSid(),finished:false};
+var view="home";
+
+/* ---------- views ---------- */
+function show(v){
+  view=v;
+  ["home","quiz","results","board"].forEach(function(n){ $("v-"+n).hidden=(n!==v); });
+  $("navBoard").hidden=(v==="quiz");
+  window.scrollTo(0,0);
+  if(v==="board") renderBoards();
+}
+
+/* ---------- score codes and organiser ---------- */
+var saved="idle", org=[];
+var SALT="epic-quiz-l2";
+function hash(s){var h=2166136261;for(var i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)>>>0}return ("00000000"+h.toString(16)).slice(-8)}
+function b64e(s){return btoa(unescape(encodeURIComponent(s))).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"")}
+function b64d(s){s=s.replace(/-/g,"+").replace(/_/g,"/");while(s.length%4)s+="=";return decodeURIComponent(escape(atob(s)))}
+function makeCode(){
+  var cats=CATS.map(function(){return 0});
+  S.ans.forEach(function(a,i){ if(a.ok) cats[CATS.indexOf(Q[i].c)]++ });
+  var p=[S.name.replace(/\|/g," "),S.team.replace(/\|/g," "),S.score,S.ms,cats.join(","),Date.now()].join("|");
+  return "EQT2-"+b64e(p)+"."+hash(p+SALT).slice(0,6);
+}
+function parseCode(tok){
+  var m=/^EQT2-([A-Za-z0-9_-]+)\.([0-9a-f]{6})$/.exec(tok.trim()); if(!m) return null;
+  var p; try{p=b64d(m[1])}catch(e){return null}
+  if(hash(p+SALT).slice(0,6)!==m[2]) return null;
+  var f=p.split("|"); if(f.length!==6) return null;
+  var sc=parseInt(f[2],10), ms=parseInt(f[3],10), cs=f[4].split(",").map(Number);
+  if(isNaN(sc)||isNaN(ms)||cs.length!==CATS.length) return null;
+  if(cs.reduce(function(a,b){return a+b},0)!==sc||sc>TOTAL||sc<0) return null;
+  return {name:f[0],team:f[1],score:sc,timeMs:ms,cats:cs};
+}
+function best(list){
+  var m={};
+  list.forEach(function(r){
+    var k=String(r.name||"").trim().toLowerCase(); if(!k) return;
+    var b=m[k];
+    if(!b||r.score>b.score||(r.score===b.score&&r.timeMs<b.timeMs)) m[k]=r;
+  });
+  return Object.keys(m).map(function(k){return m[k]}).sort(function(a,b){return b.score-a.score||a.timeMs-b.timeMs});
+}
+function boardHtml(list){
+  return '<ol class="rows">'+list.map(function(r,i){
+    return '<li class="row"><span class="rk">'+(i+1)+'</span><span class="nm">'+esc(r.name)+(r.team?'<i>'+esc(r.team)+'</i>':'')+'</span><span class="sc">'+r.score+'/'+TOTAL+'</span><span class="tm">'+mmss(r.timeMs)+'</span></li>';
+  }).join("")+'</ol>';
+}
+function drawOrg(){
+  var list=best(org);
+  $("fullBoard").innerHTML=list.length?boardHtml(list):"";
+  $("champ").innerHTML=list.length?'<div class="champ" style="margin-top:16px"><span class="label">Champion</span><h3>Congratulations, '+esc(list[0].name)+'!</h3><p>Top of the EPIC Quiz Team Advanced General Knowledge Challenge with '+list[0].score+' of '+TOTAL+' in '+mmss(list[0].timeMs)+'.</p></div>':'';
+  $("oCopyRow").hidden=!list.length;
+}
+function renderBoards(){ if(view==="board") drawOrg(); }
+function renderResultStatus(){ if(S.code) $("rCode").value=S.code; }
+function saveScore(){ S.code=makeCode(); $("rCode").value=S.code; saved="ok"; return Promise.resolve(); }
+
+/* ---------- quiz ---------- */
+function buildSeg(){
+  $("seg").innerHTML=CC.map(function(n){return '<div style="flex:'+n+'"><i></i></div>'}).join("");
+}
+function updateSeg(){
+  var start=0, segs=$("seg").children;
+  CC.forEach(function(n,k){
+    var done=Math.max(0,Math.min(n,S.i-start)); // questions fully answered in this category
+    segs[k].firstChild.style.width=(done/n*100)+"%";
+    start+=n;
+  });
+}
+function startQuiz(){
+  S.i=0;S.ans=[];S.score=0;S.ms=0;S.finished=false;S.sid=newSid();saved="idle";
+  show("quiz");buildSeg();renderQ();
+}
+function renderQ(){
+  var q=Q[S.i];S.locked=false;
+  updateSeg();
+  $("qNum").textContent="Question "+(S.i+1)+" / "+TOTAL;
+  $("qCat").textContent=q.c;
+  $("qText").textContent=q.q;
+  $("opts").innerHTML=q.o.map(function(t,k){
+    return '<button type="button" class="opt" data-k="'+k+'"><span class="k">'+LET[k]+'</span><span class="t">'+esc(t)+'</span></button>';
+  }).join("");
+  $("fb").hidden=true;$("nextBtn").hidden=true;$("hint").hidden=false;
+  $("nextBtn").textContent=(S.i===TOTAL-1)?"See results":"Next question";
+  startTimer();
+}
+function setRing(left){
+  $("pg").style.strokeDashoffset=String(CIRC*(1-left/TLIM));
+  $("tleft").textContent=String(Math.ceil(left));
+  $("ring").classList.toggle("low",left<=8);
+}
+function startTimer(){
+  clearInterval(S.tick);S.t0=Date.now();setRing(TLIM);
+  S.tick=setInterval(function(){
+    var left=Math.max(0,TLIM-(Date.now()-S.t0)/1000);
+    setRing(left);
+    if(left<=0) lock(-1);
+  },100);
+}
+function lock(choice){
+  if(S.locked) return; S.locked=true;
+  clearInterval(S.tick);
+  var q=Q[S.i], used=Math.min(TLIM*1000,Date.now()-S.t0), ok=(choice===q.a);
+  S.ms+=used; if(ok) S.score++;
+  S.ans.push({choice:choice,ok:ok,ms:used});
+  var btns=$("opts").children;
+  for(var k=0;k<btns.length;k++){
+    btns[k].disabled=true;
+    if(k===q.a) btns[k].classList.add("ok");
+    else if(k===choice) btns[k].classList.add("bad");
+    else btns[k].classList.add("dim");
+  }
+  var fb=$("fb");fb.hidden=false;fb.className="fb "+(ok?"ok":"bad");
+  $("fbH").textContent=ok?"Correct. +1 mark":(choice<0?"Time's up. The answer was "+LET[q.a]:"Not quite. The answer was "+LET[q.a]);
+  $("fbP").textContent=q.e;
+  $("hint").hidden=true;$("nextBtn").hidden=false;$("nextBtn").focus({preventScroll:true});
+  updateSeg();
+}
+function next(){
+  if(S.i<TOTAL-1){S.i++;renderQ();window.scrollTo(0,0)} else finish();
+}
+function band(n){
+  if(n>=45) return "EPIC Grandmaster";
+  if(n>=38) return "Quiz Master";
+  if(n>=28) return "Challenger";
+  if(n>=18) return "Contender";
+  return "Rising Player";
+}
+function finish(){
+  S.finished=true;S.i=TOTAL;updateSeg();
+  $("rName").textContent=S.name+(S.team?" / "+S.team:"");
+  $("rScore").textContent=S.score;
+  $("rBand").textContent=band(S.score);
+  var correct=S.score, pct=Math.round(S.score/TOTAL*100);
+  $("rKv").innerHTML='<span>Accuracy <b>'+pct+'%</b></span><span>Total time <b>'+mmss(S.ms)+'</b></span><span>Avg per question <b>'+(S.ms/TOTAL/1000).toFixed(1)+'s</b></span>';
+  var got=CATS.map(function(){return 0});
+  S.ans.forEach(function(a,i){ if(a.ok) got[CATS.indexOf(Q[i].c)]++ });
+  $("rBars").innerHTML=CATS.map(function(c,k){
+    return '<div class="br"><span>'+esc(c)+'</span><span class="tk"><i style="width:'+(got[k]/CC[k]*100)+'%"></i></span><span>'+got[k]+'/'+CC[k]+'</span></div>';
+  }).join("");
+  $("rRev").innerHTML=Q.map(function(q,i){
+    var a=S.ans[i];
+    return '<li class="'+(a.ok?'ok':'bad')+'"><strong>'+(i+1)+'.</strong> '+esc(q.q)+'<br><em>Answer: '+LET[q.a]+'. '+esc(q.o[q.a])+(a.ok?'':(a.choice<0?' (no answer)':' (you chose '+LET[a.choice]+')'))+'</em></li>';
+  }).join("");
+  show("results");
+  saveScore().then(renderResultStatus);
+  renderResultStatus();
+}
+
+/* ---------- events ---------- */
+$("startForm").addEventListener("submit",function(e){
+  e.preventDefault();
+  var n=$("fName").value.trim(), t=$("fTeam").value.trim();
+  if(n.length<2){$("fErr").textContent="Enter your full name (at least 2 characters).";$("fName").focus();return}
+  $("fErr").textContent="";
+  S.name=n;S.team=t;
+  try{localStorage.setItem("epic-quiz-name",n);localStorage.setItem("epic-quiz-team",t)}catch(x){}
+  startQuiz();
+});
+$("opts").addEventListener("click",function(e){
+  var b=e.target.closest(".opt"); if(!b||S.locked) return; lock(parseInt(b.getAttribute("data-k"),10));
+});
+$("nextBtn").addEventListener("click",next);
+document.addEventListener("keydown",function(e){
+  if(view!=="quiz"||e.ctrlKey||e.metaKey||e.altKey) return;
+  var k=e.key.toLowerCase(), idx=-1;
+  if("abcd".indexOf(k)>-1&&k.length===1) idx="abcd".indexOf(k);
+  else if("1234".indexOf(k)>-1&&k.length===1) idx=parseInt(k,10)-1;
+  if(idx>-1&&!S.locked){lock(idx);return}
+  if(S.locked&&(e.key==="Enter"||e.key===" ")&&document.activeElement!==$("nextBtn")){e.preventDefault();next()}
+});
+$("navBoard").addEventListener("click",function(){show("board")});
+$("boardHome").addEventListener("click",function(){show(S.finished?"results":"home")});
+$("againBtn").addEventListener("click",function(){show("home");renderBoards()});
+$("oRank").addEventListener("click",function(){
+  var toks=$("oIn").value.split(/\s+/).filter(Boolean), bad=0; org=[];
+  toks.forEach(function(t){var r=parseCode(t); if(r) org.push(r); else bad++});
+  $("oMsg").style.color=bad?"var(--bad)":"var(--ok)";
+  $("oMsg").textContent=org.length+" valid code"+(org.length===1?"":"s")+(bad?", "+bad+" rejected (edited or cut off)":"");
+  drawOrg();
+});
+$("oClear").addEventListener("click",function(){$("oIn").value="";org=[];$("oMsg").textContent="";drawOrg()});
+$("oCopy").addEventListener("click",function(){
+  var t=best(org).map(function(r,i){return (i+1)+". "+r.name+(r.team?" ("+r.team+")":"")+" - "+r.score+"/"+TOTAL+" - "+mmss(r.timeMs)}).join("\n");
+  try{navigator.clipboard.writeText(t).then(function(){$("oMsg").style.color="var(--ok)";$("oMsg").textContent="Results copied."},function(){$("oMsg").style.color="var(--bad)";$("oMsg").textContent="Copy was blocked. Select the list and copy it by hand."})}
+  catch(e){$("oMsg").style.color="var(--bad)";$("oMsg").textContent="Copy was blocked. Select the list and copy it by hand."}
+});
+$("copyCode").addEventListener("click",function(){
+  var ta=$("rCode"), msg=$("copyMsg");
+  function fallback(){ta.focus();ta.select();var ok=false;try{ok=document.execCommand("copy")}catch(e){} msg.textContent=ok?"Copied.":"Select the code and copy it by hand."}
+  try{navigator.clipboard.writeText(ta.value).then(function(){msg.textContent="Copied."},fallback)}catch(e){fallback()}
+});
+
+/* ---------- boot ---------- */
+$("catList").innerHTML=CATS.map(function(c,k){return "<li><span>"+esc(c)+"</span><span>"+CC[k]+"</span></li>"}).join("");
+try{ $("fName").value=localStorage.getItem("epic-quiz-name")||""; $("fTeam").value=localStorage.getItem("epic-quiz-team")||""; }catch(e){}
+renderBoards();
+})();
+</script>
+
+</body>
+</html>
